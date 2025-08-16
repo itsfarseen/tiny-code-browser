@@ -50,6 +50,7 @@ const htmlTemplate = `<!DOCTYPE html>
             --secondary-text: #6c757d;
             --button-bg: #6c757d;
             --button-hover: #5a6268;
+            --font-size: 13px;
         }
 
         [data-theme="dark"] {
@@ -93,18 +94,27 @@ const htmlTemplate = `<!DOCTYPE html>
             align-items: center;
             transition: background 0.3s, border-color 0.3s;
         }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
         .header-left h2 {
             margin: 0;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .path {
             font-family: 'JetBrains Mono', monospace;
             font-size: 14px;
             color: var(--secondary-text);
             word-break: break-all;
-            margin-top: 5px;
             transition: color 0.3s;
         }
-        .theme-toggle {
+        .header-button {
             background: var(--button-bg);
             color: var(--header-text);
             border: none;
@@ -112,9 +122,29 @@ const htmlTemplate = `<!DOCTYPE html>
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
             transition: background 0.3s;
         }
-        .theme-toggle:hover {
+        .header-button:hover {
+            background: var(--button-hover);
+        }
+        .font-controls {
+            display: flex;
+            gap: 5px;
+        }
+        .font-btn {
+            background: var(--button-bg);
+            color: var(--header-text);
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        .font-btn:hover {
             background: var(--button-hover);
         }
         .content {
@@ -160,25 +190,26 @@ const htmlTemplate = `<!DOCTYPE html>
             border-bottom: 1px solid var(--code-border);
             padding: 20px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
+            font-size: var(--font-size);
             line-height: 1.5;
             white-space: pre;
             overflow-x: auto;
             overflow-y: auto;
             color: var(--text-color);
             margin: 0 -20px;
-            transition: background 0.3s, border-color 0.3s, color 0.3s;
+            transition: background 0.3s, border-color 0.3s, color 0.3s, font-size 0.2s;
         }
         .back-button {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 4px 16px;
             background: var(--button-bg);
             color: var(--header-text);
             text-decoration: none;
             border-radius: 4px;
             font-size: 14px;
-            margin-bottom: 15px;
             transition: background 0.3s;
+            display: flex;
+            align-items: center;
         }
         .back-button:hover {
             background: var(--button-hover);
@@ -198,20 +229,25 @@ const htmlTemplate = `<!DOCTYPE html>
             <div class="header-left">
                 <h2>File Browser</h2>
                 <div class="path">{{.CurrentPath}}</div>
+                {{if ne .CurrentPath ""}}
+                    <a href="/browse/{{.CurrentPath | dirname}}" class="back-button"><< Back</a>
+                {{end}}
             </div>
-            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <div class="header-right">
+                {{if .IsFile}}
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-1)">A-</button>
+                    <button class="font-btn" onclick="changeFontSize(1)">A+</button>
+                </div>
+                {{end}}
+                <button class="header-button" onclick="toggleTheme()">🌙</button>
+            </div>
         </div>
         <div class="content">
             {{if .IsFile}}
-                {{if ne .CurrentPath ""}}
-                    <a href="/browse/{{.CurrentPath | dirname}}" class="back-button">← Back</a>
-                {{end}}
                 <h3>{{.FileName}}</h3>
                 <div class="code-content">{{.Content}}</div>
             {{else}}
-                {{if ne .CurrentPath ""}}
-                    <a href="/browse/{{.CurrentPath | dirname}}" class="back-button">← Back</a>
-                {{end}}
                 <ul class="file-list">
                     {{range .Files}}
                     <li>
@@ -232,7 +268,7 @@ const htmlTemplate = `<!DOCTYPE html>
     <script>
         function toggleTheme() {
             const body = document.body;
-            const button = document.querySelector('.theme-toggle');
+            const button = document.querySelector('.header-button');
             
             if (body.getAttribute('data-theme') === 'dark') {
                 body.removeAttribute('data-theme');
@@ -245,14 +281,27 @@ const htmlTemplate = `<!DOCTYPE html>
             }
         }
 
-        // Apply saved theme on page load
+        function changeFontSize(delta) {
+            const root = document.documentElement;
+            const currentSize = parseInt(getComputedStyle(root).getPropertyValue('--font-size'));
+            const newSize = Math.max(5, Math.min(32, currentSize + delta));
+            root.style.setProperty('--font-size', newSize + 'px');
+            localStorage.setItem('fontSize', newSize);
+        }
+
+        // Apply saved theme and font size on page load
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme');
-            const button = document.querySelector('.theme-toggle');
+            const button = document.querySelector('.header-button');
             
             if (savedTheme === 'dark') {
                 document.body.setAttribute('data-theme', 'dark');
                 button.textContent = '☀️';
+            }
+
+            const savedFontSize = localStorage.getItem('fontSize');
+            if (savedFontSize) {
+                document.documentElement.style.setProperty('--font-size', savedFontSize + 'px');
             }
         });
     </script>
