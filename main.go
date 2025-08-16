@@ -11,10 +11,21 @@ import (
 	"strings"
 )
 
-const (
-	ROOT_DIR    = "./srv"
-	LISTEN_ADDR = "0.0.0.0:8080"
+//go:embed template.html
+var htmlTemplate string
+
+var (
+	ROOT_DIR    = getEnvOrDefault("ROOT_DIR", "./srv")
+	LISTEN_ADDR = getEnvOrDefault("LISTEN_ADDR", "0.0.0.0:8080")
+	APP_TITLE   = getEnvOrDefault("APP_TITLE", "Tiny Code Browser")
 )
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 type FileInfo struct {
 	Name  string
@@ -29,10 +40,8 @@ type PageData struct {
 	Content     string
 	IsFile      bool
 	FileName    string
+	AppTitle    string
 }
-
-//go:embed template.html
-var htmlTemplate string
 
 func main() {
 	tmpl := template.Must(template.New("page").Funcs(template.FuncMap{
@@ -85,10 +94,10 @@ func main() {
 
 		data := PageData{
 			CurrentPath: urlPath,
+			AppTitle:    APP_TITLE,
 		}
 
 		if stat.IsDir() {
-			// List directory contents
 			files, err := os.ReadDir(cleanPath)
 			if err != nil {
 				http.Error(w, "Cannot read directory", http.StatusInternalServerError)
@@ -97,15 +106,18 @@ func main() {
 
 			for _, file := range files {
 				relativePath := filepath.Join(urlPath, file.Name())
-				info, err := file.Info()
-				if err != nil {
-					http.Error(w, "Cannot stat file", http.StatusInternalServerError)
-					return
+				var size int64
+
+				if !file.IsDir() {
+					if info, err := file.Info(); err == nil {
+						size = info.Size()
+					}
 				}
+
 				data.Files = append(data.Files, FileInfo{
 					Name:  file.Name(),
 					IsDir: file.IsDir(),
-					Size:  info.Size(),
+					Size:  size,
 					Path:  relativePath,
 				})
 			}

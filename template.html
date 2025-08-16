@@ -2,7 +2,7 @@
 <html>
 
 <head>
-	<title>Tiny Code Browser</title>
+	<title>{{.AppTitle}}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 	<style>
@@ -219,7 +219,7 @@
 	<div class="container">
 		<div class="header">
 			<div class="header-left">
-				<h2>File Browser</h2>
+				<h2>{{.AppTitle}}</h2>
 				<div class="path">{{.CurrentPath}}</div>
 				{{if ne .CurrentPath ""}}
 				<a href="/browse/{{.CurrentPath | dirname}}" class="back-button">
