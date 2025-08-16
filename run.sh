@@ -4,7 +4,7 @@ if [ "$1" = "" ]; then
 elif [ "$1" = "watch" ]; then
 				echo "running with auto-restart .."
 				echo
-				fd .go | entr -r go run main.go
+				echo -e "main.go\ntemplate.html" | entr -r go run main.go
 else
 				echo "invalid argument: $1"
 				echo "usage:"
