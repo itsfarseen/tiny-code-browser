@@ -78,7 +78,7 @@
 
 		.header-right {
 			display: flex;
-			align-items: center;
+			align-items: stretch;
 			gap: 10px;
 		}
 
@@ -88,6 +88,7 @@
 			color: var(--secondary-text);
 			word-break: break-all;
 			transition: color 0.3s;
+			text-overflow: ellipsis;
 		}
 
 		.header-button {
@@ -129,7 +130,7 @@
 		}
 
 		.content {
-			padding: 20px;
+			padding: 0 20px;
 		}
 
 		.file-list {
@@ -197,8 +198,9 @@
 			border-radius: 4px;
 			font-size: 14px;
 			transition: background 0.3s;
-			display: flex;
+			display: inline-flex;
 			align-items: center;
+			flex-shrink: 0;
 		}
 
 		.back-button:hover {
@@ -212,6 +214,12 @@
 			border-radius: 4px;
 			margin: 10px 0;
 		}
+
+		.path-container {
+			display: flex;
+			gap: 1em;
+			align-items: center;
+		}
 	</style>
 </head>
 
@@ -220,11 +228,6 @@
 		<div class="header">
 			<div class="header-left">
 				<h2>{{.AppTitle}}</h2>
-				<div class="path">{{.CurrentPath}}</div>
-				{{if ne .CurrentPath ""}}
-				<a href="/browse/{{.CurrentPath | dirname}}" class="back-button">
-					<< Back</a>
-						{{end}}
 			</div>
 			<div class="header-right">
 				{{if .IsFile}}
@@ -237,8 +240,14 @@
 			</div>
 		</div>
 		<div class="content">
+			<div class="path-container">
+				<h3>{{.CurrentPath}}</h3>
+				{{if ne .CurrentPath ""}}
+				<a href="/browse/{{.CurrentPath | dirname}}" class="back-button">
+					&lt;&lt; Back</a>
+				{{end}}
+			</div>
 			{{if .IsFile}}
-			<h3>{{.FileName}}</h3>
 			<div class="code-content">{{.Content}}</div>
 			{{else}}
 			<ul class="file-list">
