@@ -12,7 +12,7 @@ import (
 
 const (
 	ROOT_DIR    = "./srv"
-	LISTEN_ADDR = ":8080"
+	LISTEN_ADDR = "0.0.0.0:8080"
 )
 
 type FileInfo struct {
@@ -30,38 +30,92 @@ type PageData struct {
 	FileName    string
 }
 
-const htmlTemplate = `
-<!DOCTYPE html>
+const htmlTemplate = `<!DOCTYPE html>
 <html>
 <head>
     <title>File Browser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --container-bg: white;
+            --text-color: #333;
+            --header-bg: #343a40;
+            --header-text: white;
+            --border-color: #ddd;
+            --hover-bg: #f8f9fa;
+            --code-bg: #f8f9fa;
+            --code-border: #e9ecef;
+            --secondary-text: #6c757d;
+            --button-bg: #6c757d;
+            --button-hover: #5a6268;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --container-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --header-bg: #1f1f1f;
+            --header-text: #e0e0e0;
+            --border-color: #404040;
+            --hover-bg: #3a3a3a;
+            --code-bg: #1e1e1e;
+            --code-border: #404040;
+            --secondary-text: #a0a0a0;
+            --button-bg: #555;
+            --button-hover: #666;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
-            padding: 20px;
-            background: #f8f9fa;
-            color: #333;
+            padding: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background 0.3s, color 0.3s;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: var(--container-bg);
             overflow: hidden;
+            min-height: 100vh;
+            transition: background 0.3s;
         }
         .header {
-            background: #343a40;
-            color: white;
+            background: var(--header-bg);
+            color: var(--header-text);
             padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .header-left h2 {
+            margin: 0;
         }
         .path {
             font-family: 'JetBrains Mono', monospace;
             font-size: 14px;
-            color: #6c757d;
+            color: var(--secondary-text);
+            word-break: break-all;
+            margin-top: 5px;
+            transition: color 0.3s;
+        }
+        .theme-toggle {
+            background: var(--button-bg);
+            color: var(--header-text);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .theme-toggle:hover {
+            background: var(--button-hover);
         }
         .content {
             padding: 20px;
@@ -74,14 +128,15 @@ const htmlTemplate = `
         .file-item {
             display: flex;
             align-items: center;
-            padding: 8px 12px;
-            border-bottom: 1px solid #eee;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
             text-decoration: none;
-            color: #333;
-            transition: background 0.15s;
+            color: var(--text-color);
+            transition: background 0.15s, border-color 0.3s, color 0.3s;
+            min-height: 44px;
         }
         .file-item:hover {
-            background: #f8f9fa;
+            background: var(--hover-bg);
         }
         .file-icon {
             margin-right: 8px;
@@ -94,34 +149,39 @@ const htmlTemplate = `
             font-size: 14px;
         }
         .file-size {
-            color: #6c757d;
+            color: var(--secondary-text);
             font-size: 12px;
             font-family: 'JetBrains Mono', monospace;
+            transition: color 0.3s;
         }
         .code-content {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 4px;
+            background: var(--code-bg);
+            border-top: 1px solid var(--code-border);
+            border-bottom: 1px solid var(--code-border);
             padding: 20px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
             line-height: 1.5;
-            white-space: pre-wrap;
+            white-space: pre;
             overflow-x: auto;
-            color: #333;
+            overflow-y: auto;
+            color: var(--text-color);
+            margin: 0 -20px;
+            transition: background 0.3s, border-color 0.3s, color 0.3s;
         }
         .back-button {
             display: inline-block;
             padding: 8px 16px;
-            background: #6c757d;
-            color: white;
+            background: var(--button-bg);
+            color: var(--header-text);
             text-decoration: none;
             border-radius: 4px;
             font-size: 14px;
             margin-bottom: 15px;
+            transition: background 0.3s;
         }
         .back-button:hover {
-            background: #5a6268;
+            background: var(--button-hover);
         }
         .error {
             color: #dc3545;
@@ -135,19 +195,22 @@ const htmlTemplate = `
 <body>
     <div class="container">
         <div class="header">
-            <h2>File Browser</h2>
-            <div class="path">{{.CurrentPath}}</div>
+            <div class="header-left">
+                <h2>File Browser</h2>
+                <div class="path">{{.CurrentPath}}</div>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
         </div>
         <div class="content">
             {{if .IsFile}}
                 {{if ne .CurrentPath ""}}
-                    <a href="/browse{{.CurrentPath | dirname}}" class="back-button">← Back</a>
+                    <a href="/browse/{{.CurrentPath | dirname}}" class="back-button">← Back</a>
                 {{end}}
                 <h3>{{.FileName}}</h3>
                 <div class="code-content">{{.Content}}</div>
             {{else}}
                 {{if ne .CurrentPath ""}}
-                    <a href="/browse{{.CurrentPath | dirname}}" class="back-button">← Back</a>
+                    <a href="/browse/{{.CurrentPath | dirname}}" class="back-button">← Back</a>
                 {{end}}
                 <ul class="file-list">
                     {{range .Files}}
@@ -165,6 +228,34 @@ const htmlTemplate = `
             {{end}}
         </div>
     </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                button.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                button.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const button = document.querySelector('.theme-toggle');
+            
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                button.textContent = '☀️';
+            }
+        });
+    </script>
 </body>
 </html>
 `
