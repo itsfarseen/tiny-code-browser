@@ -1,0 +1,12 @@
+services:
+  file-browser:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./srv:/srv
+    environment:
+      - ROOT_DIR=/srv
+      - LISTEN_ADDR=0.0.0.0:80
+      - APP_TITLE=Code Browser
+    restart: unless-stopped
