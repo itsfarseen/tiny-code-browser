@@ -189,6 +189,11 @@
 			transition: background 0.3s, border-color 0.3s, color 0.3s, font-size 0.2s;
 		}
 
+		.code-content.word-wrap-enabled {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+		}
+
 		.back-button {
 			display: inline-block;
 			padding: 4px 16px;
@@ -235,6 +240,7 @@
 					<button class="font-btn" onclick="changeFontSize(-1)">A-</button>
 					<button class="font-btn" onclick="changeFontSize(1)">A+</button>
 				</div>
+				<button class="header-button" id="word-wrap-button">W&gt;</button>
 				{{end}}
 				<button class="header-button" onclick="toggleTheme()">🌙</button>
 			</div>
@@ -304,6 +310,36 @@
 			const savedFontSize = localStorage.getItem('fontSize');
 			if (savedFontSize) {
 				document.documentElement.style.setProperty('--font-size', savedFontSize + 'px');
+			}
+
+			const wordWrapButton = document.getElementById('word-wrap-button');
+			const codeContent = document.querySelector('.code-content'); // Use querySelector for class
+
+			function updateWordWrapState(isEnabled) {
+				if (codeContent) {
+					if (isEnabled) {
+						codeContent.classList.add('word-wrap-enabled');
+					} else {
+						codeContent.classList.remove('word-wrap-enabled');
+					}
+				}
+				if (wordWrapButton) {
+					wordWrapButton.textContent = isEnabled ? 'W<' : 'W>';
+				}
+				localStorage.setItem('wordWrapEnabled', isEnabled ? 'true' : 'false');
+			}
+
+			// Load saved state from localStorage
+			const savedWordWrapState = localStorage.getItem('wordWrapEnabled');
+			const initialWordWrapEnabled = savedWordWrapState === 'true';
+			updateWordWrapState(initialWordWrapEnabled);
+
+
+			if (wordWrapButton) { // Only add listener if button exists
+				wordWrapButton.addEventListener('click', () => {
+					const currentWordWrapEnabled = codeContent.classList.contains('word-wrap-enabled');
+					updateWordWrapState(!currentWordWrapEnabled);
+				});
 			}
 		});
 	</script>
